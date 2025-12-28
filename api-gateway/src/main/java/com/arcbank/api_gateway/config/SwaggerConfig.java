@@ -9,10 +9,6 @@ import org.springframework.context.annotation.Configuration;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Configuración de Swagger centralizado en API Gateway
- * Agrega automáticamente todos los microservicios registrados en las rutas
- */
 @Configuration
 public class SwaggerConfig {
 

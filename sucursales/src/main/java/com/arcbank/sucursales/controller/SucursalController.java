@@ -59,7 +59,7 @@ public class SucursalController {
         return ResponseEntity.ok(service.findByParroquia(parroquia));
     }
 
-    @Operation(summary = "Obtener feriados asociados a una sucursal (según ubicación)")
+    @Operation(summary = "Obtener feriados asociados a una sucursal")
     @GetMapping("/{codigoUnico}/feriados")
     public ResponseEntity<List<SucursalDTO.FeriadoDTO>> getFeriados(@PathVariable String codigoUnico) {
         return ResponseEntity.ok(service.getFeriados(codigoUnico));

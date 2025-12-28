@@ -71,11 +71,17 @@ spring:
           predicates:
             - Path=/api/transacciones/**
 
-        # RUTA 8: BANCOS (Lista de bancos del switch interbancario)
+        # RUTA 8: BANCOS
         - id: bancos-service
           uri: http://ms-transaccion:8080
           predicates:
             - Path=/api/bancos/**
+
+        # RUTA 9: SUCURSALES
+        - id: sucursales-service
+          uri: http://micro-sucursales:8080
+          predicates:
+            - Path=/api/sucursales/**
 
 # Configuración de Swagger centralizado
 springdoc:
@@ -88,6 +94,8 @@ springdoc:
         url: http://micro-cuentas:8081/v3/api-docs
       - name: Microservicio Transacciones
         url: http://ms-transaccion:8080/v3/api-docs
+      - name: Microservicio Sucursales
+        url: http://micro-sucursales:8080/v3/api-docs
   api-docs:
     enabled: true
 

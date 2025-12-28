@@ -77,7 +77,7 @@ sudo apt-get install certbot -y
 # Generar certificados
 sudo certbot certonly --standalone \
   -d bantec.35-209-225-8.sslip.io \
-  --email tu-email@ejemplo.com \
+  --email arcbank2@gmail.com \
   --agree-tos \
   --non-interactive
 

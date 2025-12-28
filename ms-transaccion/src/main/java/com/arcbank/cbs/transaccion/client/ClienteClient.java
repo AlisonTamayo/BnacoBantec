@@ -1,0 +1,17 @@
+package com.arcbank.cbs.transaccion.client;
+
+import java.util.Map;
+
+import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+
+/**
+ * Cliente Feign para comunicación con micro-clientes
+ */
+@FeignClient(name = "ms-clientes", url = "${app.feign.clientes-url:http://localhost:8082}")
+public interface ClienteClient {
+
+    @GetMapping("/api/v1/clientes/{id}")
+    Map<String, Object> obtenerCliente(@PathVariable("id") Integer id);
+}

@@ -45,12 +45,14 @@ services:
       - micro-clientes
       - micro-cuentas
       - ms-transaccion
+      - micro-sucursales
     networks:
       - bantec-prod-net
     environment:
       - PAYMENT_HOST=ms-transaccion
       - CLIENT_HOST=micro-clientes
       - ACCOUNT_HOST=micro-cuentas
+      - SUCURSALES_HOST=micro-sucursales
 
   # ==========================================
   # 1. MICROSERVICIO CUENTAS (Puerto 8081)
@@ -175,16 +177,46 @@ services:
       DB_PASS: admin
       SERVER_PORT: 8080
       CUENTAS_URL: http://micro-cuentas:8081
-      # Switch Interbancario DIGICONECU (IP PUBLICA de Google Cloud)
-      APP_SWITCH_URL: http://35.208.155.21:9080
+      # Switch Interbancario (IP Interna 10.128.0.8)
+      # Apuntamos a la raíz, Feign añade /api/v2/transfers
+      APP_SWITCH_URL: http://10.128.0.8:8000
       BANCO_CODIGO: BANTEC
+      MTLS_ENABLED: ${MTLS_ENABLED:-false}
+      MTLS_KEYSTORE_PASSWORD: ${MTLS_KEYSTORE_PASSWORD:-bantec123}
+      MTLS_TRUSTSTORE_PASSWORD: ${MTLS_TRUSTSTORE_PASSWORD:-bantec123}
     ports:
       - "8082:8080"
     networks:
       - bantec-prod-net
 
   # ==========================================
-  # 4. FRONTEND WEB (Accesible solo via Nginx)
+  # 4. MICROSERVICIO SUCURSALES (MongoDB)
+  # ==========================================
+  db-sucursales:
+    image: mongo:7
+    container_name: db-sucursales-bantec
+    restart: always
+    environment:
+      MONGO_INITDB_DATABASE: db_sucursales
+    volumes:
+      - mongo_data_sucursales:/data/db
+    networks:
+      - bantec-prod-net
+
+  micro-sucursales:
+    build:
+      context: ./sucursales
+      dockerfile: Dockerfile
+    container_name: micro-sucursales-bantec
+    depends_on:
+      - db-sucursales
+    environment:
+      SPRING_DATA_MONGODB_URI: mongodb://db-sucursales:27017/db_sucursales
+    networks:
+      - bantec-prod-net
+
+  # ==========================================
+  # 5. FRONTEND WEB (Accesible solo via Nginx)
   # ==========================================
   frontend-web:
     build:
@@ -203,7 +235,7 @@ services:
       - bantec-prod-net
 
   # ==========================================
-  # 5. FRONTEND CAJERO (Accesible solo via Nginx)
+  # 6. FRONTEND CAJERO (Accesible solo via Nginx)
   # ==========================================
   frontend-cajero:
     build:
@@ -225,3 +257,4 @@ volumes:
   postgres_data_cuentas:
   postgres_data_clientes:
   postgres_data_transacciones:
+  mongo_data_sucursales:

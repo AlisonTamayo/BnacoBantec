@@ -14,74 +14,67 @@ import com.arcbank.cbs.transaccion.service.TransaccionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-/**
- * Endpoint webhook para recibir notificaciones del Switch DIGICONECU
- * cuando BANTEC es el banco destino de una transferencia interbancaria
- */
 @Slf4j
 @RestController
 @RequestMapping("/api/transacciones/webhook")
 @RequiredArgsConstructor
 public class WebhookController {
 
-    private final TransaccionService transaccionService;
+        private final TransaccionService transaccionService;
 
-    /**
-     * Recibe notificación del switch cuando hay una transferencia
-     * desde otro banco hacia una cuenta BANTEC
-     * 
-     * Payload esperado del switch:
-     * {
-     * "instructionId": "uuid",
-     * "cuentaDestino": "2207654321",
-     * "monto": 100.00,
-     * "bancoOrigen": "ARCBANK",
-     * "estado": "Completada"
-     * }
-     */
-    @PostMapping
-    public ResponseEntity<?> recibirTransferenciaEntrante(@RequestBody Map<String, Object> payload) {
-        log.info("📥 Webhook recibido del switch: {}", payload);
+        @SuppressWarnings("unchecked")
+        @PostMapping
+        public ResponseEntity<?> recibirTransferenciaEntrante(@RequestBody Map<String, Object> payload) {
+                log.info("Webhook recibido (Nexus Standard): {}", payload);
 
-        try {
-            String instructionId = payload.get("instructionId") != null
-                    ? payload.get("instructionId").toString()
-                    : null;
-            String cuentaDestino = payload.get("cuentaDestino") != null
-                    ? payload.get("cuentaDestino").toString()
-                    : null;
-            String bancoOrigen = payload.get("bancoOrigen") != null
-                    ? payload.get("bancoOrigen").toString()
-                    : "DESCONOCIDO";
+                try {
+                        Map<String, Object> header = (Map<String, Object>) payload.get("header");
+                        Map<String, Object> body = (Map<String, Object>) payload.get("body");
 
-            BigDecimal monto = BigDecimal.ZERO;
-            if (payload.get("monto") != null) {
-                monto = new BigDecimal(payload.get("monto").toString());
-            }
+                        if (header == null || body == null) {
+                                return ResponseEntity.badRequest().body(Map.of(
+                                                "status", "NACK",
+                                                "error", "Formato de mensaje inválido"));
+                        }
 
-            if (instructionId == null || cuentaDestino == null || monto.compareTo(BigDecimal.ZERO) <= 0) {
-                log.warn("Webhook con datos incompletos: {}", payload);
-                return ResponseEntity.badRequest().body(Map.of(
-                        "status", "NACK",
-                        "error", "Datos incompletos en el webhook"));
-            }
+                        String instructionId = body.get("instructionId") != null
+                                        ? body.get("instructionId").toString()
+                                        : null;
 
-            // Procesar la transferencia entrante (acreditar a cuenta local)
-            transaccionService.procesarTransferenciaEntrante(
-                    instructionId, cuentaDestino, monto, bancoOrigen);
+                        Map<String, Object> creditor = (Map<String, Object>) body.get("creditor");
+                        String cuentaDestino = (creditor != null && creditor.get("accountId") != null)
+                                        ? creditor.get("accountId").toString()
+                                        : null;
 
-            log.info("✅ Transferencia entrante procesada: {} -> cuenta {}", bancoOrigen, cuentaDestino);
+                        String bancoOrigen = header.get("originatingBankId") != null
+                                        ? header.get("originatingBankId").toString()
+                                        : "DESCONOCIDO";
 
-            return ResponseEntity.ok(Map.of(
-                    "status", "ACK",
-                    "message", "Transferencia procesada exitosamente",
-                    "instructionId", instructionId));
+                        BigDecimal monto = BigDecimal.ZERO;
+                        Map<String, Object> amount = (Map<String, Object>) body.get("amount");
+                        if (amount != null && amount.get("value") != null) {
+                                monto = new BigDecimal(amount.get("value").toString());
+                        }
 
-        } catch (Exception e) {
-            log.error("❌ Error procesando webhook: {}", e.getMessage(), e);
-            return ResponseEntity.status(422).body(Map.of(
-                    "status", "NACK",
-                    "error", e.getMessage()));
+                        if (instructionId == null || cuentaDestino == null || monto.compareTo(BigDecimal.ZERO) <= 0) {
+                                return ResponseEntity.badRequest().body(Map.of(
+                                                "status", "NACK",
+                                                "error", "Datos críticos faltantes"));
+                        }
+
+                        transaccionService.procesarTransferenciaEntrante(instructionId, cuentaDestino, monto,
+                                        bancoOrigen);
+
+                        return ResponseEntity.ok(Map.of(
+                                        "status", "ACK",
+                                        "message", "Transferencia procesada exitosamente",
+                                        "instructionId", instructionId));
+
+                } catch (Exception e) {
+                        log.error("Error procesando webhook: {}", e.getMessage());
+                        return ResponseEntity.status(422).body(Map.of(
+                                        "status", "NACK",
+                                        "error", e.getMessage()));
+                }
         }
-    }
 }

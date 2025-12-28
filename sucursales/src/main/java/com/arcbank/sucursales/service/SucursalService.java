@@ -30,7 +30,7 @@ public class SucursalService {
     private final RestClient restClient;
 
     @Transactional
-    @CacheEvict(value = {"sucursalesById", "sucursalesByCodigo"}, allEntries = true)
+    @CacheEvict(value = { "sucursalesById", "sucursalesByCodigo" }, allEntries = true)
     public SucursalDTO create(SucursalRequest request) {
         log.info("Creando sucursal con código {}", request.getCodigoUnico());
 
@@ -48,7 +48,7 @@ public class SucursalService {
     }
 
     @Transactional
-    @CacheEvict(value = {"sucursalesById", "sucursalesByCodigo"}, allEntries = true)
+    @CacheEvict(value = { "sucursalesById", "sucursalesByCodigo" }, allEntries = true)
     public SucursalDTO update(String id, SucursalRequest request) {
         log.info("Actualizando sucursal {}", id);
 
@@ -66,7 +66,7 @@ public class SucursalService {
     }
 
     @Transactional
-    @CacheEvict(value = {"sucursalesById", "sucursalesByCodigo"}, allEntries = true)
+    @CacheEvict(value = { "sucursalesById", "sucursalesByCodigo" }, allEntries = true)
     public void delete(String id) {
         log.info("Eliminando sucursal {}", id);
         Sucursal sucursal = sucursalRepository.findById(id)
@@ -97,7 +97,6 @@ public class SucursalService {
                 .map(geoLevelMapper::toDTO)
                 .collect(Collectors.toList());
     }
-
 
     public List<SucursalDTO> findByProvincia(String provincia) {
         log.info("Buscando sucursales por provincia {}", provincia);
@@ -137,7 +136,6 @@ public class SucursalService {
         return dto.getUbicacion().getFeriados();
     }
 
-
     @Async
     public void notificarSucursalCreadaAsync(String codigoUnico) {
         log.info("Enviando notificación async de creación de sucursal {}", codigoUnico);
@@ -146,8 +144,7 @@ public class SucursalService {
                 .uri("/api/auditoria/v1/eventos")
                 .body(Map.of(
                         "tipo", "SUCURSAL_CREADA",
-                        "codigoUnico", codigoUnico
-                ))
+                        "codigoUnico", codigoUnico))
                 .retrieve()
                 .toBodilessEntity();
     }
