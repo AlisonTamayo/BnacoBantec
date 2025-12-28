@@ -1,0 +1,5 @@
+﻿**/postgres_data*
+**/mongo_data*
+**/target
+.git
+node_modules
