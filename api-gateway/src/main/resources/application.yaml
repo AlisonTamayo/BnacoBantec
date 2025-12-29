@@ -17,6 +17,9 @@ spring:
               - "http://35.209.79.193:3000"
               - "http://35.209.79.193:3001"
               - "http://35.209.79.193"
+              - "https://35.209.79.193"
+              - "https://35.209.79.193:3000"
+              - "https://35.209.79.193:3001"
               # HTTPS sslip.io domains
               - "https://bantec.35-209-79-193.sslip.io"
               - "https://bantec.35-209-79-193.sslip.io:8443"
