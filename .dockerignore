@@ -1,5 +1,29 @@
-﻿**/postgres_data*
-**/mongo_data*
-**/target
+﻿# Git
 .git
+.gitignore
+.gitattributes
+
+# Maven
+target
+**/target
+
+# Node
 node_modules
+**/node_modules
+
+# Docker volumes / DB
+postgres_data*
+mongo_data*
+**/postgres_data*
+**/mongo_data*
+
+# Logs
+*.log
+
+# IDE
+.vscode
+.idea
+
+# Certs locales
+*.pem
+*.p12
