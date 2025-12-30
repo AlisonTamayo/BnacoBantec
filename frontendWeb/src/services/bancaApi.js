@@ -4,13 +4,13 @@ const GATEWAY_URL = "";
 
 async function request(path, options = {}) {
   const url = `${GATEWAY_URL}${path}`;
-  
+
   const headers = {
     "Content-Type": "application/json",
     ...options.headers
   };
 
-  const res = await fetch(url, { ...options, headers });
+  const res = await fetch(url, { ...options, headers, cache: 'no-store' });
 
   if (!res.ok) {
     const errorBody = await res.json().catch(() => ({}));

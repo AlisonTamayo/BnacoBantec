@@ -160,6 +160,34 @@ export function AuthProvider({ children }) {
     setState(s => ({ ...s, user: { ...s.user, accounts } }))
   }
 
+  const refreshAccounts = async () => {
+    const id = state.user && state.user.identificacion
+    if (!id) {
+      console.warn("⚠️ [AuthContext] No hay identificación para refrescar cuentas")
+      return
+    }
+
+    try {
+      // Importación dinámica para evitar dependencia circular si bancaApi importa AuthContext
+      // Aunque en este caso bancaApi ya importa apiFetch de aquí.
+      const { getConsolidada } = await import('../services/bancaApi')
+      const cuentasRaw = await getConsolidada(id)
+
+      const mapped = (cuentasRaw || []).map(c => ({
+        id: String(c.idCuenta),
+        number: c.numeroCuenta,
+        type: c.idTipoCuenta === 1 ? "Ahorros" : "Corriente",
+        balance: Number(c.saldoDisponible || c.saldoActual || 0)
+      }))
+
+      setUserAccounts(mapped)
+      console.log("✅ [AuthContext] Cuentas refrescadas:", mapped)
+      return mapped
+    } catch (e) {
+      console.error('❌ [AuthContext] Error refrescando cuentas:', e)
+    }
+  }
+
   const addTransaction = (tx) => {
     setState(s => {
       const txs = [tx, ...(s.transactions || [])]
@@ -182,6 +210,7 @@ export function AuthProvider({ children }) {
       updateUser,
       persistIdentification,
       setUserAccounts,
+      refreshAccounts,
       addTransaction
     }}>
       {children}
