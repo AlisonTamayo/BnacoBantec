@@ -16,13 +16,6 @@ import javax.net.ssl.SSLContext;
 import java.io.InputStream;
 import java.security.KeyStore;
 
-/**
- * Configuración de mTLS (Mutual TLS) para comunicación segura con el Switch
- * DIGICONECU
- * 
- * Esta configuración permite que Bantec envíe su certificado al Switch para
- * autenticación mutua.
- */
 @Configuration
 public class MTLSConfig {
 
@@ -41,30 +34,23 @@ public class MTLSConfig {
     @Value("${app.mtls.enabled:false}")
     private boolean mtlsEnabled;
 
-    /**
-     * Cliente Feign configurado con mTLS
-     * Solo se activa si app.mtls.enabled=true
-     */
     @Bean
     public Client feignClient() throws Exception {
         if (!mtlsEnabled) {
-            // Si mTLS no está habilitado, usar cliente por defecto
+
             return new Client.Default(null, null);
         }
 
-        // Cargar KeyStore (certificado del banco)
         KeyStore keyStore = KeyStore.getInstance("PKCS12");
         try (InputStream keyStoreStream = keystoreResource.getInputStream()) {
             keyStore.load(keyStoreStream, keystorePassword.toCharArray());
         }
 
-        // Cargar TrustStore (certificados confiables del Switch)
         KeyStore trustStore = KeyStore.getInstance("PKCS12");
         try (InputStream trustStoreStream = truststoreResource.getInputStream()) {
             trustStore.load(trustStoreStream, truststorePassword.toCharArray());
         }
 
-        // Crear SSLContext con autenticación mutua
         SSLContext sslContext = SSLContextBuilder.create()
                 .loadKeyMaterial(keyStore, keystorePassword.toCharArray())
                 .loadTrustMaterial(trustStore, null)

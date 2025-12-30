@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.arcbank.cbs.transaccion.dto.SwitchTransferRequest;
 import com.arcbank.cbs.transaccion.service.TransaccionService;
 
 import lombok.RequiredArgsConstructor;
@@ -16,44 +17,38 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/transacciones/webhook")
+@RequestMapping("/api/core/transferencias/recepcion")
 @RequiredArgsConstructor
 public class WebhookController {
 
         private final TransaccionService transaccionService;
 
-        @SuppressWarnings("unchecked")
         @PostMapping
-        public ResponseEntity<?> recibirTransferenciaEntrante(@RequestBody Map<String, Object> payload) {
-                log.info("Webhook recibido (Nexus Standard): {}", payload);
+        public ResponseEntity<?> recibirTransferenciaEntrante(@RequestBody SwitchTransferRequest request) {
+                log.info("Webhook recibido (ISO 20022): {}", request);
 
                 try {
-                        Map<String, Object> header = (Map<String, Object>) payload.get("header");
-                        Map<String, Object> body = (Map<String, Object>) payload.get("body");
-
-                        if (header == null || body == null) {
+                        if (request.getHeader() == null || request.getBody() == null) {
                                 return ResponseEntity.badRequest().body(Map.of(
                                                 "status", "NACK",
                                                 "error", "Formato de mensaje inválido"));
                         }
 
-                        String instructionId = body.get("instructionId") != null
-                                        ? body.get("instructionId").toString()
-                                        : null;
+                        String instructionId = request.getBody().getInstructionId();
 
-                        Map<String, Object> creditor = (Map<String, Object>) body.get("creditor");
-                        String cuentaDestino = (creditor != null && creditor.get("accountId") != null)
-                                        ? creditor.get("accountId").toString()
-                                        : null;
+                        String cuentaDestino = null;
+                        if (request.getBody().getCreditor() != null) {
+                                cuentaDestino = request.getBody().getCreditor().getAccountId();
+                        }
 
-                        String bancoOrigen = header.get("originatingBankId") != null
-                                        ? header.get("originatingBankId").toString()
-                                        : "DESCONOCIDO";
+                        String bancoOrigen = "DESCONOCIDO";
+                        if (request.getHeader().getOriginatingBankId() != null) {
+                                bancoOrigen = request.getHeader().getOriginatingBankId();
+                        }
 
                         BigDecimal monto = BigDecimal.ZERO;
-                        Map<String, Object> amount = (Map<String, Object>) body.get("amount");
-                        if (amount != null && amount.get("value") != null) {
-                                monto = new BigDecimal(amount.get("value").toString());
+                        if (request.getBody().getAmount() != null && request.getBody().getAmount().getValue() != null) {
+                                monto = request.getBody().getAmount().getValue();
                         }
 
                         if (instructionId == null || cuentaDestino == null || monto.compareTo(BigDecimal.ZERO) <= 0) {
@@ -61,6 +56,9 @@ public class WebhookController {
                                                 "status", "NACK",
                                                 "error", "Datos críticos faltantes"));
                         }
+
+                        log.info("Simulando acreditación para cuenta: {}, monto: {}, desde: {}", cuentaDestino, monto,
+                                        bancoOrigen);
 
                         transaccionService.procesarTransferenciaEntrante(instructionId, cuentaDestino, monto,
                                         bancoOrigen);

@@ -17,8 +17,8 @@ export default function TransaccionesInterbancarias() {
 
     const [step, setStep] = useState(1);
     const [toAccount, setToAccount] = useState("");
-    const [bankName, setBankName] = useState("");
-    const [banks, setBanks] = useState([])
+    const [bankBic, setBankBic] = useState("");
+    const [banks, setBanks] = useState([]);
     const [toName, setToName] = useState("");
 
     // Estado de cuenta origen seleccionada (ID interno)
@@ -32,27 +32,35 @@ export default function TransaccionesInterbancarias() {
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        let cancelled = false
-        getBancos().then(res => {
-            // Adaptar respuesta según venga del backend o mock
-            const list = (res && res.bancos) ? res.bancos : (Array.isArray(res) ? res : [])
-            if (!cancelled) setBanks(list)
-        }).catch(() => { })
+        let cancelled = false;
+
+        getBancos().then(list => {
+            if (!cancelled && Array.isArray(list)) {
+                // Ensure we have 'id' and 'name' properties for the select
+                // getBancos helper in bancaApi maps it to { id, nombre, codigo }
+                // We want to use 'codigo' as the BIC value.
+                setBanks(list);
+            }
+        }).catch(err => console.error("Error loading banks:", err));
 
         // Si cambia la lista de cuentas y no hay seleccionada, seleccionar la primera
         if (accounts.length > 0 && !fromAccId) {
             setFromAccId(accounts[0].id)
         }
 
-        return () => { cancelled = true }
-    }, [accounts])
+        return () => { cancelled = true; }
+    }, [accounts, fromAccId]);
 
     const goToStep2 = () => {
-        if (!toAccount || !bankName || !toName)
+        if (!toAccount || !bankBic || !toName)
             return setError("Todos los campos son obligatorios.");
 
-        if (toAccount.replace(/\D/g, '').length < 6)
-            return setError("El número de cuenta parece inválido.");
+        // Validation: Only numbers (The input already enforces this via replace, but double check)
+        if (!/^\d+$/.test(toAccount))
+            return setError("El número de cuenta solo debe contener números.");
+
+        if (toAccount.length < 6)
+            return setError("El número de cuenta parece inválido (mínimo 6 dígitos).");
 
         setError("");
         setStep(2);
@@ -85,11 +93,11 @@ export default function TransaccionesInterbancarias() {
                 tipoOperacion: "TRANSFERENCIA_SALIDA",
                 idCuentaOrigen: fromAccId, // Integer ID interno
                 cuentaExterna: toAccount, // Cuenta destino en otro banco
-                bancoDestino: bankName,
+                bancoDestino: bankBic,    // SENDING BIC (e.g. ARCBANK)
                 beneficiario: toName,
                 monto: Number(amount),
                 canal: "WEB",
-                descripcion: `Transferencia a ${toName} (${bankName})`
+                descripcion: `Transferencia a ${toName} (${bankBic})`
             }
 
             // Nota: Si tu backend ms-transaccion actual NO soporta transferencias externas (campos bancoDestino/cuentaExterna),
@@ -121,7 +129,7 @@ export default function TransaccionesInterbancarias() {
             `Desde cuenta: ${fromAccount.number}\n` +
             `A nombre de: ${toName}\n` +
             `Cuenta destino: ${toAccount}\n` +
-            `Banco destino: ${bankName}\n` +
+            `Banco destino: ${bankBic}\n` +
             `Fecha: ${new Date().toLocaleString()}\n`;
 
         const blob = new Blob([text], { type: "text/plain" });
@@ -133,36 +141,35 @@ export default function TransaccionesInterbancarias() {
         URL.revokeObjectURL(url);
     };
 
+    // Helper to find bank name for display
+    const getBankName = (bic) => {
+        const b = banks.find(x => x.id === bic);
+        return b ? b.name : bic;
+    };
+
     return (
         <div style={{ padding: 30 }}>
             {step === 1 && (
                 <div style={styles.card}>
                     <h2 style={styles.title}>Transferencia Interbancaria</h2>
 
-                    <label>N° de cuenta destino</label>
+                    <label>Banco Destino</label>
+                    <select style={styles.input} value={bankBic} onChange={e => setBankBic(e.target.value)}>
+                        <option value="">-- Seleccione un banco --</option>
+                        {banks.map((b) => (
+                            <option key={b.id || b.codigo} value={b.codigo || b.id}>
+                                {b.nombre || b.name} ({b.codigo || b.id})
+                            </option>
+                        ))}
+                    </select>
+
+                    <label>N° de Cuenta Destino</label>
                     <input
                         style={styles.input}
                         value={toAccount}
                         onChange={(e) => setToAccount(e.target.value.replace(/\D/g, ''))}
                         placeholder="Solo números"
                     />
-
-                    <label>Banco</label>
-                    {banks && banks.length > 0 ? (
-                        <select style={styles.input} value={bankName} onChange={e => setBankName(e.target.value)}>
-                            <option value="">-- Seleccione un banco --</option>
-                            {banks.map((b, i) => (
-                                <option key={b.id || i} value={b.nombre || b.name || b.id}>{b.nombre || b.name || b.id}</option>
-                            ))}
-                        </select>
-                    ) : (
-                        <input
-                            style={styles.input}
-                            value={bankName}
-                            onChange={e => setBankName(e.target.value)}
-                            placeholder="Ingrese nombre del banco"
-                        />
-                    )}
 
                     <label>Beneficiario (Nombres)</label>
                     <input
@@ -251,7 +258,7 @@ export default function TransaccionesInterbancarias() {
                             <tr><td>Cuenta:</td><td>{fromAccount.number}</td></tr>
 
                             <tr><td colSpan={2} style={styles.sectionTitle}>Destino</td></tr>
-                            <tr><td>Banco:</td><td>{bankName}</td></tr>
+                            <tr><td>Banco:</td><td>{getBankName(bankBic)}</td></tr>
                             <tr><td>Beneficiario:</td><td>{toName}</td></tr>
                             <tr><td>Cuenta:</td><td>{toAccount}</td></tr>
                         </tbody>
