@@ -16,6 +16,9 @@ import javax.net.ssl.SSLContext;
 import java.io.InputStream;
 import java.security.KeyStore;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @Configuration
 public class MTLSConfig {
 
@@ -47,15 +50,33 @@ public class MTLSConfig {
         }
 
         KeyStore trustStore = KeyStore.getInstance("PKCS12");
+        boolean trustStoreLoaded = false;
         try (InputStream trustStoreStream = truststoreResource.getInputStream()) {
             trustStore.load(trustStoreStream, truststorePassword.toCharArray());
+            if (trustStore.size() > 0) {
+                trustStoreLoaded = true;
+            } else {
+                log.warn("El truststore {} está vacío. Se usará el truststore del sistema.", truststoreResource);
+            }
+        } catch (Exception e) {
+            log.warn("No se pudo cargar el truststore {}: {}. Se usará el truststore del sistema.", truststoreResource,
+                    e.getMessage());
         }
 
-        SSLContext sslContext = SSLContextBuilder.create()
-                .loadKeyMaterial(keyStore, keystorePassword.toCharArray())
-                .loadTrustMaterial(trustStore, null)
-                .build();
+        SSLContextBuilder sslContextBuilder = SSLContextBuilder.create()
+                .loadKeyMaterial(keyStore, keystorePassword.toCharArray());
 
+        if (trustStoreLoaded) {
+            sslContextBuilder.loadTrustMaterial(trustStore, null);
+        } else {
+            // Si no hay truststore personalizado o está vacío, cargamos el por defecto del
+            // sistema
+            sslContextBuilder.loadTrustMaterial((java.security.KeyStore) null,
+                    (org.apache.hc.core5.ssl.TrustStrategy) null);
+            // Nota: .loadTrustMaterial(null, null) carga las CAs del sistema (trustAnchors)
+        }
+
+        SSLContext sslContext = sslContextBuilder.build();
         SSLConnectionSocketFactory sslSocketFactory = new SSLConnectionSocketFactory(sslContext);
 
         HttpClientConnectionManager connectionManager = PoolingHttpClientConnectionManagerBuilder.create()

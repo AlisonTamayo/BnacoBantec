@@ -24,7 +24,7 @@ public interface SwitchClient {
      * Enviar una transferencia interbancaria al switch
      * POST /api/v2/transfers
      */
-    @PostMapping("/api/switch/v1/transferir")
+    @PostMapping("/api/v1/transacciones")
     SwitchTransferResponse enviarTransferencia(@RequestBody SwitchTransferRequest request);
 
     /**
