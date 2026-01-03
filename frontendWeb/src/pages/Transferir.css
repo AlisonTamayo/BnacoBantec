@@ -11,19 +11,19 @@
 }
 
 .transfer-title {
-    font-size: 2rem;
-    font-weight: 900;
-    margin-bottom: 32px;
+    font-size: 1.6rem;
+    font-weight: 800;
+    margin-bottom: 24px;
     text-align: center;
-    letter-spacing: -1.5px;
+    letter-spacing: -1px;
 }
 
 .transfer-card {
     background: var(--bg-card);
     backdrop-filter: var(--glass-effect);
     -webkit-backdrop-filter: var(--glass-effect);
-    padding: 40px;
-    border-radius: 28px;
+    padding: 30px;
+    border-radius: 20px;
     border: 1px solid var(--border-glass);
     box-shadow: var(--shadow-premium);
 }
@@ -67,13 +67,19 @@
 
 .transfer-input {
     width: 100%;
-    padding: 16px 20px;
+    padding: 12px 16px;
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid var(--border-glass);
-    border-radius: 16px;
+    border-radius: 12px;
     color: var(--text-main);
-    font-size: 1rem;
+    font-size: 0.95rem;
     transition: all 0.3s;
+}
+
+.transfer-input option {
+    background: #0d1117;
+    color: #f0f6fc;
+    padding: 10px;
 }
 
 .transfer-input:focus {

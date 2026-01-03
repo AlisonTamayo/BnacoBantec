@@ -74,8 +74,13 @@ public class MTLSConfig {
         if (truststoreResource.exists()) {
             try (InputStream trustStoreStream = truststoreResource.getInputStream()) {
                 trustStore.load(trustStoreStream, truststorePassword.toCharArray());
-                trustStoreLoaded = true;
-                log.info("✅ Truststore cargado exitosamente desde {}", truststoreResource);
+                if (trustStore.size() > 0) {
+                    trustStoreLoaded = true;
+                    log.info("✅ Truststore cargado exitosamente desde {} ({} certificados)",
+                            truststoreResource, trustStore.size());
+                } else {
+                    log.warn("⚠️ Truststore personalizado está VACÍO. Se usará el del sistema.");
+                }
             } catch (Exception e) {
                 log.warn("⚠️ Error cargando truststore personalizado: {}. Se usará el del sistema.", e.getMessage());
             }
