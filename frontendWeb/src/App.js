@@ -43,28 +43,16 @@ export default function App() {
         />
       )}
 
-      <main className="main" style={{ width: "100%" }}>
-        {/* Botón hamburguesa visible en pantallas pequeñas */}
+      <main className="main">
+        {/* Toggle Button for Mobile/Responsive */}
         {(loggedIn || isDevView) && !isLoginPage && (
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "flex-start",
-              paddingBottom: 8,
-            }}
-          >
+          <div className="menu-toggle-wrapper">
             <button
               onClick={() => setSidebarOpen((s) => !s)}
-              aria-label="Toggle sidebar"
-              style={{
-                background: "transparent",
-                border: "none",
-                cursor: "pointer",
-                fontSize: 22,
-                padding: 8,
-              }}
+              className="btn btn-ghost"
+              style={{ padding: '8px', border: 'none', background: 'rgba(255,255,255,0.05)' }}
             >
-              {sidebarOpen ? <FiX /> : <FiMenu />}
+              {sidebarOpen ? <FiX size={24} /> : <FiMenu size={24} />}
             </button>
           </div>
         )}

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { FiHome, FiList, FiLogOut } from "react-icons/fi";
+import { FiHome, FiList, FiLogOut, FiUser } from "react-icons/fi";
 import { TbArrowsExchange } from "react-icons/tb";
 
 export default function Sidebar({ isOpen = true, onRequestClose }) {
@@ -27,57 +27,44 @@ export default function Sidebar({ isOpen = true, onRequestClose }) {
     navigate("/login");
   };
 
-  // Estilos dinámicos
-  const hiddenStyle = isOpen ? {} : { display: "none" };
-  const mobileOverlayStyle = isMobile && isOpen
-    ? {
-      position: "fixed",
-      left: 0,
-      top: 0,
-      height: "100%",
-      zIndex: 1500,
-      boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
-      background: "#fff",
-    }
-    : {};
-
-  const sidebarStyle = { ...styles.sidebar, ...mobileOverlayStyle, ...hiddenStyle };
-
   const handleNavClick = () => {
     if (isMobile && typeof onRequestClose === "function") onRequestClose();
   };
 
   return (
-    <aside className="sidebar" style={sidebarStyle}>
-      <div className="brand" style={styles.brand}>BANTEC</div>
+    <aside className={`sidebar ${!isOpen ? 'sidebar-hidden' : ''}`}>
+      <div className="brand">
+        BANTEC<span style={{ color: 'var(--accent-primary)' }}>.</span>
+      </div>
 
-      <div className="profile-mini" style={styles.profileMini}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={styles.circleIcon}>👤</div>
-          <div style={{ display: "flex", flexDirection: "column", lineHeight: "18px" }}>
-            <span style={{ fontWeight: 700 }}>
+      <div className="profile-mini">
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div className="profile-avatar">
+            <FiUser />
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", overflow: 'hidden' }}>
+            <span style={{ fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {state?.user?.name || "Usuario"}
             </span>
             <NavLink
               to="/perfil"
               className="small"
-              style={styles.profileLink}
+              style={{ color: 'var(--accent-primary)', textDecoration: 'none', fontSize: 12 }}
               onClick={handleNavClick}
             >
-              Mi perfil
+              Ver perfil privado
             </NavLink>
           </div>
         </div>
       </div>
 
-      <nav style={styles.menuContainer}>
-        <ul className="nav-list" style={styles.navList}>
+      <nav style={{ flexGrow: 1 }}>
+        <ul className="nav-list">
           <li>
             <NavLink
               to="/"
               end
-              className={({ isActive }) => (isActive ? "active-link" : "")}
-              style={({ isActive }) => isActive ? { ...styles.navItem, ...styles.activeItem } : styles.navItem}
+              className={({ isActive }) => (isActive ? "active" : "")}
               onClick={handleNavClick}
             >
               <FiHome size={18} /> Inicio
@@ -87,8 +74,7 @@ export default function Sidebar({ isOpen = true, onRequestClose }) {
           <li>
             <NavLink
               to="/movimientos"
-              className={({ isActive }) => (isActive ? "active-link" : "")}
-              style={({ isActive }) => isActive ? { ...styles.navItem, ...styles.activeItem } : styles.navItem}
+              className={({ isActive }) => (isActive ? "active" : "")}
               onClick={handleNavClick}
             >
               <FiList size={18} /> Movimientos
@@ -98,8 +84,7 @@ export default function Sidebar({ isOpen = true, onRequestClose }) {
           <li>
             <NavLink
               to={transferirPath}
-              className={({ isActive }) => (isActive ? "active-link" : "")}
-              style={({ isActive }) => isActive ? { ...styles.navItem, ...styles.activeItem } : styles.navItem}
+              className={({ isActive }) => (isActive ? "active" : "")}
               onClick={handleNavClick}
             >
               <TbArrowsExchange size={20} /> Transferir
@@ -109,8 +94,7 @@ export default function Sidebar({ isOpen = true, onRequestClose }) {
           <li>
             <NavLink
               to={interbancariasPath}
-              className={({ isActive }) => (isActive ? "active-link" : "")}
-              style={({ isActive }) => isActive ? { ...styles.navItem, ...styles.activeItem } : styles.navItem}
+              className={({ isActive }) => (isActive ? "active" : "")}
               onClick={handleNavClick}
             >
               <TbArrowsExchange size={20} /> Interbancarias
@@ -119,97 +103,54 @@ export default function Sidebar({ isOpen = true, onRequestClose }) {
         </ul>
       </nav>
 
-      <div style={styles.logoutContainer}>
+      <div className="logout-section" style={{ marginTop: 'auto', paddingTop: 20, borderTop: '1px solid var(--border-glass)' }}>
         <button
           onClick={() => {
             handleLogout();
             if (isMobile && typeof onRequestClose === "function") onRequestClose();
           }}
-          style={styles.logoutButton}
+          className="btn-logout"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            background: 'transparent',
+            border: 'none',
+            color: '#f87171',
+            cursor: 'pointer',
+            fontWeight: 600,
+            width: '100%',
+            padding: '12px'
+          }}
         >
-          <FiLogOut size={18} /> Cerrar sesión
+          <FiLogOut size={18} /> Cerrar Sesión Segura
         </button>
       </div>
+
+      <style>{`
+        .profile-avatar {
+          width: 40px;
+          height: 40px;
+          background: rgba(56, 189, 248, 0.1);
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--accent-primary);
+          font-size: 20px;
+          flex-shrink: 0;
+        }
+        .sidebar-hidden {
+          transform: translateX(-100%);
+        }
+        @media (max-width: 900px) {
+           .sidebar {
+              position: fixed;
+              z-index: 1000;
+              height: 100vh;
+           }
+        }
+      `}</style>
     </aside>
   );
 }
-
-const styles = {
-  sidebar: {
-    width: "260px",
-    background: "#fff",
-    borderRight: "1px solid #e5e5e5",
-    display: "flex",
-    flexDirection: "column",
-    padding: "25px 20px",
-    height: "100vh",
-    transition: "transform 0.3s ease",
-  },
-  brand: {
-    fontSize: 28,
-    fontWeight: 800,
-    color: "#b8860b",
-    marginBottom: 25,
-  },
-  profileMini: { marginBottom: 40 },
-  circleIcon: {
-    width: 38,
-    height: 38,
-    background: "#ffd54f",
-    borderRadius: "50%",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    fontSize: 20,
-  },
-  profileLink: {
-    fontSize: 14,
-    color: "#666",
-    marginTop: 4,
-    textDecoration: "none",
-    cursor: "pointer"
-  },
-  menuContainer: { flexGrow: 1 },
-  navList: {
-    listStyle: "none",
-    padding: 0,
-    display: "flex",
-    flexDirection: "column",
-    gap: 8,
-  },
-  navItem: {
-    display: "flex",
-    alignItems: "center",
-    gap: 12,
-    textDecoration: "none",
-    color: "#555",
-    fontSize: 16,
-    padding: "10px 12px",
-    borderRadius: "8px",
-    transition: "background 0.2s"
-  },
-  activeItem: {
-    background: "#fff8e1", // Un fondo suave para el activo
-    color: "#b8860b",
-    fontWeight: "600"
-  },
-  logoutContainer: {
-    marginTop: "auto",
-    paddingTop: 20,
-    borderTop: '1px solid #eee',
-  },
-  logoutButton: {
-    padding: "10px 12px",
-    fontSize: 16,
-    display: "flex",
-    alignItems: "center",
-    gap: 10,
-    width: "100%",
-    justifyContent: "flex-start",
-    background: "transparent",
-    border: "none",
-    cursor: "pointer",
-    color: "#d32f2f", // Rojo suave para logout
-    fontWeight: "500"
-  },
-};

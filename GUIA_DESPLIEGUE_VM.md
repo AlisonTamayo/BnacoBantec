@@ -4,7 +4,7 @@
 
 | VM | IP Externa | IP Interna | Propósito |
 |---|---|---|---|
-| **vmbantec** | `35.209.225.8` | `10.128.0.7` | Banco BANTEC (Microservicios) |
+| **vmbantec** | `35.209.79.193` | `10.128.0.7` | Banco BANTEC (Microservicios) |
 | **vmdigiconecu** | `35.208.155.21` | `10.128.0.8` | Switch Interbancario |
 
 ---
@@ -76,7 +76,7 @@ sudo apt-get install certbot -y
 
 # Generar certificados
 sudo certbot certonly --standalone \
-  -d bantec.35-209-225-8.sslip.io \
+  -d bantec.35-209-79-193.sslip.io \
   --email arcbank2@gmail.com \
   --agree-tos \
   --non-interactive
@@ -172,13 +172,13 @@ docker exec db-transacciones-bantec pg_isready -U postgres
 
 | Servicio | URL | Descripción |
 |---|---|---|
-| **Banca Web** | https://bantec.35-209-225-8.sslip.io | Frontend Web |
-| **Cajero ATM** | https://bantec.35-209-225-8.sslip.io:8443 | Frontend Cajero |
-| **API Gateway** | http://35.209.225.8:8080 | API REST |
-| **Swagger UI** | http://35.209.225.8:8080/swagger-ui.html | Documentación API |
-| **Micro Clientes** | http://35.209.225.8:8083/swagger-ui.html | Swagger Clientes |
-| **Micro Cuentas** | http://35.209.225.8:8081/swagger-ui.html | Swagger Cuentas |
-| **MS Transacciones** | http://35.209.225.8:8082/swagger-ui.html | Swagger Transacciones |
+| **Banca Web** | https://bantec.35-209-79-193.sslip.io | Frontend Web |
+| **Cajero ATM** | https://bantec.35-209-79-193.sslip.io:8443 | Frontend Cajero |
+| **API Gateway** | http://35.209.79.193:8080 | API REST |
+| **Swagger UI** | http://35.209.79.193:8080/swagger-ui.html | Documentación API |
+| **Micro Clientes** | http://35.209.79.193:8083/swagger-ui.html | Swagger Clientes |
+| **Micro Cuentas** | http://35.209.79.193:8081/swagger-ui.html | Swagger Cuentas |
+| **MS Transacciones** | http://35.209.79.193:8082/swagger-ui.html | Swagger Transacciones |
 
 ### 6.2 Probar Conectividad con el Switch
 ```bash
