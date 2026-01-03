@@ -8,14 +8,13 @@ echo "🐳 Usando Docker para generar certificados (evita errores de librerías 
 
 # Usamos una imagen ligera de Java que permite instalar OpenSSL
 # Montamos el directorio actual ($PWD) en /work dentro del contenedor
-# Nota: Usamos 'sudo' porque en la VM parece ser necesario para docker
-sudo docker run --rm -v "$(pwd):/work" -w /work eclipse-temurin:17-jdk-alpine sh -c '
+docker run --rm -v "$(pwd):/work" -w /work eclipse-temurin:17-jdk-alpine sh -c '
   # Instalar OpenSSL
   apk add --no-cache openssl > /dev/null
   
   echo "🔐 Generando certificados..."
-  mkdir -p ms-transaccion/src/main/resources/certs
-  cd ms-transaccion/src/main/resources/certs
+  mkdir -p ms-transaccion/certs
+  cd ms-transaccion/certs
   
   # Variables
   KEYSTORE_PASSWORD="bantec123"

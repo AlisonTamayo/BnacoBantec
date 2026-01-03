@@ -123,13 +123,15 @@ jobs:
             # === 7. DESPLIEGUE DOCKER ===
             echo "🚀 Actualizando contenedores..."
             sudo docker-compose -f docker-compose.prod.yml build --no-cache
-            sudo docker-compose -f docker-compose.prod.yml up -d --force-recreate --remove-orphans
+            
+            # Ejecutar el script maestro de seguridad y despliegue
+            sudo ./deploy-secure.sh
 
             # Limpiar imágenes antiguas para ahorrar espacio
             sudo docker image prune -f
 
-            # Recargar Nginx para asegurar que tome los nuevos certificados
-            sudo docker exec nginx-proxy-bantec nginx -s reload || true
+            # --- Ensure nginx is restarted with new config ---
+            sudo docker restart nginx-proxy-bantec || true
 
             echo "📊 Estado Final:"
             sudo docker ps

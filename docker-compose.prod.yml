@@ -39,6 +39,19 @@ services:
       - bantec-prod-net
 
   # ==========================================
+  # CERTBOT (SSL Certificate Manager)
+  # ==========================================
+  certbot:
+    image: certbot/certbot
+    container_name: certbot-bantec
+    volumes:
+      - ./nginx/certs:/etc/letsencrypt
+      - ./nginx/certbot:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+    networks:
+      - bantec-prod-net
+
+  # ==========================================
   # 0. API GATEWAY (Puerto 8080 - Solo interno)
   # ==========================================
   api-gateway:
@@ -200,7 +213,7 @@ services:
     ports:
       - "8082:8080"
     volumes:
-      - ~/bantec_certs:/app/certs:ro
+      - ./ms-transaccion/certs:/app/certs:ro
     networks:
       - bantec-prod-net
 
