@@ -4,7 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import { FaUser, FaLock, FaEyeSlash, FaEye, FaShieldAlt, FaRocket, FaGlobe } from "react-icons/fa";
 import "./Login.css";
 
-const GATEWAY = process.env.REACT_APP_API_BASE_URL || "http://localhost:8080";
+const GATEWAY = process.env.REACT_APP_API_BASE_URL || "";
 
 export default function Login() {
   const { login, persistIdentification } = useAuth();

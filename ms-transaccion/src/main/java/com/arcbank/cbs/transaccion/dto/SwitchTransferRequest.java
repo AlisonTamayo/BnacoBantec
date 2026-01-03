@@ -32,6 +32,7 @@ public class SwitchTransferRequest {
         private Amount amount;
         private Party debtor;
         private Party creditor;
+        private String remittanceInformation; // Concepto/Motivo de la transferencia
     }
 
     @Data

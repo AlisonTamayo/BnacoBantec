@@ -24,34 +24,20 @@ public class BancosController {
 
     private final SwitchClient switchClient;
 
+    // Lista de bancos hardcodeada (el Switch no provee este endpoint)
+    private static final List<Map<String, Object>> BANCOS_DISPONIBLES = List.of(
+            Map.of("id", "ARCBANK", "nombre", "Banco Arcbank", "codigo", "ARCBANK"),
+            Map.of("id", "NEXUS_BANK", "nombre", "Nexus Bank", "codigo", "NEXUS_BANK"),
+            Map.of("id", "ECUSOL_BK", "nombre", "Ecusol Bank", "codigo", "ECUSOL_BK"));
+
     @GetMapping
     @Operation(summary = "Listar bancos disponibles para transferencias interbancarias")
     public ResponseEntity<?> listarBancos() {
-        try {
-            log.info("Consultando bancos del switch DIGICONECU usando SwitchClient");
+        log.info("[BANTEC] Retornando lista de bancos hardcodeada (Switch no provee endpoint)");
 
-            List<Map<String, Object>> bancos = switchClient.obtenerBancos();
-
-            if (bancos == null) {
-                bancos = List.of();
-            }
-
-            List<Map<String, Object>> bancosExternos = bancos;
-
-            log.info("Bancos disponibles para transferencia: {}", bancosExternos.size());
-
-            return ResponseEntity.ok(Map.of(
-                    "bancos", bancosExternos,
-                    "total", bancosExternos.size()));
-
-        } catch (Exception e) {
-            log.error("Error consultando bancos del switch: {}", e.getMessage());
-
-            return ResponseEntity.ok(Map.of(
-                    "bancos", List.of(),
-                    "total", 0,
-                    "error", "No se pudo conectar al switch interbancario: " + e.getMessage()));
-        }
+        return ResponseEntity.ok(Map.of(
+                "bancos", BANCOS_DISPONIBLES,
+                "total", BANCOS_DISPONIBLES.size()));
     }
 
     @GetMapping("/health")

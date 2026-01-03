@@ -175,6 +175,9 @@ public class TransaccionServiceImpl implements TransaccionService {
                                                         ? request.getIdBancoExterno()
                                                         : "UNKNOWN")
                                                 .build())
+                                        .remittanceInformation(request.getDescripcion() != null
+                                                ? request.getDescripcion()
+                                                : "Transferencia interbancaria BANTEC")
                                         .build())
                                 .build();
 
