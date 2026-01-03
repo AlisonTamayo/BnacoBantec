@@ -21,22 +21,19 @@ export default function TransaccionesInterbancarias() {
     const [banks, setBanks] = useState([]);
     const [toName, setToName] = useState("");
 
-    // Estado de cuenta origen seleccionada (ID interno)
+
     const [fromAccId, setFromAccId] = useState(firstAccId);
 
-    // Objeto cuenta origen completo para mostrar saldo/numero
     const fromAccount = accounts.find(a => a.id === fromAccId) || accounts[0] || { number: '---', balance: 0 };
 
     const [amount, setAmount] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
 
-    // Ajustamos la lista de bancos para que coincida con la lógica de Arcbank
     const BANCOS_REGISTRADOS = [
         { id: 'NEXUS_BANK', nombre: 'Nexus Bank', codigo: 'NEXUS_BANK', bin: '270100' },
         { id: 'ECUSOL_BK', nombre: 'Ecusol Bank', codigo: 'ECUSOL_BK', bin: '370100' },
         { id: 'ARCBANK', nombre: 'Arcbank', codigo: 'ARCBANK', bin: '400000' },
-        { id: 'BANTEC', nombre: 'Bantec', codigo: 'BANTEC', bin: '100000' },
     ];
 
     useEffect(() => {
