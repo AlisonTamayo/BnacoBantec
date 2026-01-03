@@ -184,15 +184,17 @@ public class TransaccionServiceImpl implements TransaccionService {
                         SwitchTransferResponse switchResp = switchClient.enviarTransferencia(switchRequest);
 
                         if (switchResp == null || !switchResp.isSuccess()) {
-                            log.warn("Switch rechazó transferencia. Response: {}", switchResp);
+                            log.warn("❌ Switch rechazó transferencia. Response: {}", switchResp);
                             BigDecimal saldoRevertido = procesarSaldo(trx.getIdCuentaOrigen(), montoTotal);
+
+                            String switchError = "Error desconocido";
+                            if (switchResp != null && switchResp.getError() != null) {
+                                switchError = switchResp.getError().getMessage();
+                            }
 
                             trx.setEstado("FALLIDA");
                             trx.setSaldoResultante(saldoRevertido);
-                            trx.setDescripcion(
-                                    "RECHAZADA POR SWITCH: " + (switchResp != null && switchResp.getError() != null
-                                            ? switchResp.getError().getMessage()
-                                            : "Error desconocido"));
+                            trx.setDescripcion("RECHAZADA POR SWITCH: " + switchError);
 
                             Transaccion fallida = transaccionRepository.save(trx);
                             return mapearADTO(fallida, null);
