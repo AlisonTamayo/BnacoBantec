@@ -102,16 +102,21 @@ public class TransaccionServiceImpl implements TransaccionService {
                     if (request.getCuentaExterna() == null || request.getCuentaExterna().isBlank())
                         throw new BusinessException("Falta cuenta destino externa para transferencia interbancaria.");
 
+                    BigDecimal comision = new BigDecimal("0.45");
+                    BigDecimal montoTotal = request.getMonto().add(comision);
+
                     trx.setIdCuentaOrigen(request.getIdCuentaOrigen());
                     trx.setIdCuentaDestino(null);
                     trx.setCuentaExterna(request.getCuentaExterna());
                     trx.setIdBancoExterno(request.getIdBancoExterno());
+                    trx.setMonto(montoTotal); // El monto registrado incluye la comisión
+                    trx.setDescripcion(request.getDescripcion() + " (Comisión interbancaria $0.45)");
 
                     BigDecimal saldoDebitado = null;
                     try {
-                        saldoDebitado = procesarSaldo(trx.getIdCuentaOrigen(), request.getMonto().negate());
+                        saldoDebitado = procesarSaldo(trx.getIdCuentaOrigen(), montoTotal.negate());
                     } catch (Exception e) {
-                        log.error("Error al debitar saldo: {}", e.getMessage());
+                        log.error("Error al debitar saldo (con comisión): {}", e.getMessage());
                         throw new BusinessException("Error al debitar cuenta origen: " + e.getMessage());
                     }
 
@@ -141,6 +146,9 @@ public class TransaccionServiceImpl implements TransaccionService {
                         String creationTime = java.time.OffsetDateTime.now(java.time.ZoneOffset.UTC)
                                 .format(java.time.format.DateTimeFormatter.ISO_INSTANT);
 
+                        String beneficiario = request.getBeneficiario() != null ? request.getBeneficiario()
+                                : "Beneficiario Externo";
+
                         SwitchTransferRequest switchRequest = SwitchTransferRequest.builder()
                                 .header(SwitchTransferRequest.Header.builder()
                                         .messageId(messageId)
@@ -160,7 +168,7 @@ public class TransaccionServiceImpl implements TransaccionService {
                                                 .accountType(tipoCuentaDebtor)
                                                 .build())
                                         .creditor(SwitchTransferRequest.Party.builder()
-                                                .name("Beneficiario Externo")
+                                                .name(beneficiario)
                                                 .accountId(request.getCuentaExterna())
                                                 .accountType("SAVINGS")
                                                 .targetBankId(request.getIdBancoExterno() != null
@@ -170,11 +178,14 @@ public class TransaccionServiceImpl implements TransaccionService {
                                         .build())
                                 .build();
 
+                        log.info("🚀 Enviando a Switch: Debtor={} Creditor={} Monto={}",
+                                nombreDebtor, beneficiario, request.getMonto());
+
                         SwitchTransferResponse switchResp = switchClient.enviarTransferencia(switchRequest);
 
                         if (switchResp == null || !switchResp.isSuccess()) {
                             log.warn("Switch rechazó transferencia. Response: {}", switchResp);
-                            BigDecimal saldoRevertido = procesarSaldo(trx.getIdCuentaOrigen(), request.getMonto());
+                            BigDecimal saldoRevertido = procesarSaldo(trx.getIdCuentaOrigen(), montoTotal);
 
                             trx.setEstado("FALLIDA");
                             trx.setSaldoResultante(saldoRevertido);
@@ -192,7 +203,7 @@ public class TransaccionServiceImpl implements TransaccionService {
 
                     } catch (Exception e) {
                         log.error("Error comunicando con switch, revirtiendo débito: {}", e.getMessage());
-                        BigDecimal saldoRevertido = procesarSaldo(trx.getIdCuentaOrigen(), request.getMonto());
+                        BigDecimal saldoRevertido = procesarSaldo(trx.getIdCuentaOrigen(), montoTotal);
 
                         trx.setEstado("FALLIDA");
                         trx.setSaldoResultante(saldoRevertido);

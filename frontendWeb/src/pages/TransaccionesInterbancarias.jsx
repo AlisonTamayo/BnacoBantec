@@ -69,9 +69,9 @@ export default function TransaccionesInterbancarias() {
             await realizarTransferenciaInterbancaria(request);
             addTransaction({
                 accId: fromAccId,
-                amount: -Number(amount),
+                amount: -(Number(amount) + 0.45),
                 tipo: 'TRANSFERENCIA_SALIDA',
-                desc: `Transferencia a ${toName} (${bankBic})`,
+                desc: `Transf. Interbancaria a ${toName} (Incl. $0.45 comisión)`,
                 fecha: new Date().toISOString()
             });
             setStep(4);
@@ -83,7 +83,17 @@ export default function TransaccionesInterbancarias() {
     };
 
     const downloadReceipt = () => {
-        const text = `TRANSFERENCIA INTERBANCARIA EXITOSA\n\nMonto: $${Number(amount).toFixed(2)}\nDesde cuenta: ${fromAccount.number}\nA nombre de: ${toName}\nCuenta destino: ${toAccount}\nBanco destino: ${bankBic}\nFecha: ${new Date().toLocaleString()}\n`;
+        const comision = 0.45;
+        const total = Number(amount) + comision;
+        const text = `TRANSFERENCIA INTERBANCARIA BANTEC\n\n` +
+            `Monto Transferido: $${Number(amount).toFixed(2)}\n` +
+            `Comisión Interbancaria: $${comision.toFixed(2)}\n` +
+            `Total Debitado: $${total.toFixed(2)}\n\n` +
+            `Desde cuenta: ${fromAccount.number}\n` +
+            `Destino: ${getBankName(bankBic)} (${bankBic})\n` +
+            `Beneficiario: ${toName}\n` +
+            `Cuenta destino: ${toAccount}\n` +
+            `Fecha: ${new Date().toLocaleString()}\n`;
         const blob = new Blob([text], { type: "text/plain" });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");

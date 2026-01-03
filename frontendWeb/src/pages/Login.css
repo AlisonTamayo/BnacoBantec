@@ -1,18 +1,14 @@
 /* Global Overrides for Login to ensure Static Viewport */
 .login-container {
-  position: fixed;
-  /* Use fixed to stay pinned to viewport */
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  overflow: hidden;
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
   background: var(--bg-deep);
   font-family: 'Inter', sans-serif;
-  z-index: 9999;
+  overflow-y: auto;
 }
 
 .login-overlay {
@@ -30,13 +26,10 @@
   position: relative;
   z-index: 2;
   width: 100%;
-  height: 100%;
-  max-width: 1400px;
+  max-width: 1200px;
   display: flex;
-  padding: 0;
+  padding: 20px;
   box-sizing: border-box;
-  overflow: hidden;
-  /* Ensure no internal content causes scroll */
 }
 
 /* Left Panel - Branding & Hero */
@@ -73,9 +66,9 @@
 }
 
 .hero-text h1 {
-  font-size: clamp(32px, 4vw, 56px);
+  font-size: clamp(28px, 3.5vw, 48px);
   line-height: 1.1;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
   font-weight: 800;
 }
 
@@ -97,8 +90,8 @@
 .feature-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 24px;
-  margin-top: 30px;
+  gap: 16px;
+  margin-top: 20px;
 }
 
 .feature-item {
@@ -134,31 +127,31 @@
   background: rgba(1, 4, 9, 0.4);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  padding: 40px;
-  height: 100%;
-  border-left: 1px solid var(--border-glass);
+  padding: 30px;
+  border-radius: 24px;
+  border: 1px solid var(--border-glass);
   position: relative;
 }
 
 .login-card {
   width: 100%;
-  max-width: 440px;
-  padding: 40px;
+  max-width: 400px;
+  padding: 20px 30px;
   animation: fadeInUp 0.8s ease-out;
 }
 
 .card-header {
-  margin-bottom: 32px;
+  margin-bottom: 24px;
 }
 
 .card-header h2 {
-  font-size: 28px;
-  margin-bottom: 8px;
+  font-size: 24px;
+  margin-bottom: 4px;
 }
 
 .card-header p {
   color: var(--text-muted);
-  font-size: 14px;
+  font-size: 13px;
 }
 
 /* Forms */
@@ -328,8 +321,8 @@
 }
 
 .hero-image-container {
-  margin: 20px 0;
-  max-height: 35vh;
+  margin: 10px 0;
+  max-height: 25vh;
   display: flex;
   justify-content: center;
   align-items: center;

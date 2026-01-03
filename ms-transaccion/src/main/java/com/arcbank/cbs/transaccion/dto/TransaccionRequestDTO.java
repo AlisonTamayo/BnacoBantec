@@ -32,6 +32,7 @@ public class TransaccionRequestDTO {
     private BigDecimal monto;
 
     private String descripcion;
+    private String beneficiario;
     private String canal;
     private Integer idSucursal;
 }

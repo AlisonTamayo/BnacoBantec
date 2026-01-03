@@ -49,6 +49,8 @@ echo
 
 echo "### Starting nginx ..."
 docker-compose -f docker-compose.prod.yml up --force-recreate -d nginx-proxy
+echo "### Waiting for nginx to stabilize (10s) ..."
+sleep 10
 echo
 
 echo "### Deleting dummy certificate for ${domains[0]} ..."
@@ -85,5 +87,16 @@ docker-compose -f docker-compose.prod.yml run --rm --entrypoint "\
     --non-interactive" certbot
 echo
 
-echo "### Reloading nginx ..."
-docker-compose -f docker-compose.prod.yml exec nginx-proxy nginx -s reload
+# VERIFICACIÓN FINAL: ¿Se obtuvo un certificado real?
+REAL_CERT="$data_path/live/${domains[0]}/fullchain.pem"
+if [ -f "$REAL_CERT" ]; then
+    if openssl x509 -in "$REAL_CERT" -noout -issuer | grep -q "localhost"; then
+        echo "⚠️  ADVERTENCIA: El certificado sigue siendo DUMMY (localhost). El proceso de Let's Encrypt falló."
+    else
+        echo "✅ ÉXITO: Certificado Let's Encrypt Real obtenido correctamente."
+        echo "### Reloading nginx ..."
+        docker-compose -f docker-compose.prod.yml exec nginx-proxy nginx -s reload
+    fi
+else
+    echo "❌ ERROR: No se encontró ningún certificado en $REAL_CERT. Nginx podría fallar al reiniciar."
+fi
