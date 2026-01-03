@@ -7,7 +7,7 @@ import { MdOutlineAccountBalance } from 'react-icons/md';
 import './Transferir.css';
 
 export default function TransaccionesInterbancarias() {
-    const { state, addTransaction } = useAuth();
+    const { state, addTransaction, refreshAccounts } = useAuth();
     const navigate = useNavigate();
 
     const accounts = state?.user?.accounts || [];
