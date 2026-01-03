@@ -37,13 +37,12 @@ if [ ! -e "$data_path/options-ssl-nginx.conf" ] || [ ! -e "$data_path/ssl-dhpara
 fi
 
 echo "### Creating dummy certificate for $domains ..."
-path="/etc/letsencrypt/live/$domains"
+# Usamos el openssl del host para evitar problemas de configuración dentro del contenedor
 mkdir -p "$data_path/live/$domains"
-docker-compose -f docker-compose.prod.yml run --rm --entrypoint "\
-  openssl req -x509 -nodes -newkey rsa:1024 -days 1\
-    -keyout '$path/privkey.pem' \
-    -out '$path/fullchain.pem' \
-    -subj '/CN=localhost'" certbot
+openssl req -x509 -nodes -newkey rsa:2048 -days 1 \
+  -keyout "$data_path/live/$domains/privkey.pem" \
+  -out "$data_path/live/$domains/fullchain.pem" \
+  -subj "/CN=localhost"
 echo
 
 

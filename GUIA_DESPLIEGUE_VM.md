@@ -95,7 +95,7 @@ sudo chown -R $USER:$USER nginx/certs
 > [!NOTE]
 > El archivo `docker-compose.prod.yml` ya tiene un servicio `certbot` que se encargará de renovar los certificados automáticamente cada 12 horas.
 
-### 3.2 Certificados de Desarrollo (Autofirmados)
+### 3.3 Certificados de Desarrollo (Autofirmados)
 ```bash
 # Si no tienes dominio, usar certificados autofirmados
 mkdir -p nginx/certs
@@ -145,7 +145,8 @@ ms-transaccion:
 
 ## 5. Desplegar con Docker Compose
 
-### 5.1 Despliegue de Producción
+### 5.1 Despliegue de Producción (Manual)
+Si prefieres no usar la automatización total:
 ```bash
 # Construir y levantar todos los servicios
 docker-compose -f docker-compose.prod.yml up --build -d

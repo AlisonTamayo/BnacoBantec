@@ -1,39 +1,58 @@
 #!/bin/bash
 # Script de Automatización de Seguridad BANTEC (Totalmente Automatizado)
-# Este script es idempotente: si los certificados ya existen, no los recrea a menos que sea necesario.
+# Uso: ./deploy-secure.sh [domain] [duckdns_token]
 
-echo "🚀 Iniciando despliegue seguro automatizado..."
+echo "🚀 Iniciando despliegue seguro automatizado BANTEC..."
 
-# 1. Preparar permisos
-chmod +x generate-mtls-certs.sh init-letsencrypt.sh
+# 1. Preparar permisos y variables
+chmod +x *.sh
+DOMAIN="${1:-bantec-bank.duckdns.org}"
+TOKEN="$2"
+PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$PROJECT_DIR"
 
-# 2. Verificar/Generar certificados mTLS para ms-transaccion
-# Si el keystore ya existe, no lo regeneramos para no romper la confianza con el Switch
+# 2. Actualizar IP en DuckDNS
+if [ -n "$TOKEN" ]; then
+    echo "🌐 [0/4] Actualizando DuckDNS..."
+    ./update_duckdns.sh "${DOMAIN%%.*}" "$TOKEN"
+fi
+
+# 3. Configuración dinámica de Nginx
+if [ -f "./fix_nginx_conf.sh" ]; then
+    echo "🔧 [1/4] Configurando Nginx para el dominio $DOMAIN..."
+    ./fix_nginx_conf.sh nginx/nginx.conf "$DOMAIN"
+fi
+
+# 4. Verificar/Generar certificados mTLS para ms-transaccion
+# Buscamos en la ruta que usa docker-compose (./ms-transaccion/certs/)
 if [ ! -f "./ms-transaccion/certs/bantec-keystore.p12" ]; then
-    echo "🔐 [1/3] Generando certificados mTLS por primera vez..."
+    echo "🔐 [2/4] Generando certificados mTLS por primera vez..."
     ./generate-mtls-certs.sh
 else
-    echo "✅ [1/3] Certificados mTLS ya existen. Omitiendo generación."
+    echo "✅ [2/4] Certificados mTLS ya existen. Omitiendo generación."
 fi
 
-# 3. Verificar/Generar certificados SSL con Let's Encrypt
-# Verificamos si existe la carpeta del dominio en live
-if [ ! -d "./nginx/certs/live/bantec-bank.duckdns.org" ]; then
-    echo "🌐 [2/3] Iniciando proceso de SSL Let's Encrypt para bantec-bank.duckdns.org..."
-    # Ejecutamos el script de inicialización
-    # Nota: He modificado el init-letsencrypt.sh para que pueda ser llamado sin interacción
+# 5. Verificar/Generar certificados SSL con Let's Encrypt
+if [ ! -d "./nginx/certs/live/$DOMAIN" ]; then
+    echo "🛡️ [3/4] Iniciando proceso de SSL Let's Encrypt para $DOMAIN..."
     ./init-letsencrypt.sh --auto
 else
-    echo "✅ [2/3] Certificados SSL ya existen para bantec-bank.duckdns.org."
+    # Verificamos si el certificado es real o Dummy (autofirmado)
+    if openssl x509 -in "./nginx/certs/live/$DOMAIN/fullchain.pem" -noout -issuer | grep -q "localhost"; then
+        echo "⚠️  Certificado DUMMY detectado. Reemplazando por Let's Encrypt..."
+        ./init-letsencrypt.sh --auto
+    else
+        echo "✅ [3/4] Certificado SSL Real ya instalado."
+    fi
 fi
 
-# 4. Levantar o Reiniciar servicios
-echo "🏗️ [3/3] Desplegando servicios con Docker Compose..."
-# Forzamos el levantamiento de los servicios, asegurando que nginx tome los certificados
-docker-compose -f docker-compose.prod.yml up -d --remove-orphans
+# 6. Levantar o Reiniciar servicios con construcción total
+echo "🏗️ [4/4] Desplegando servicios con Docker Compose..."
+# Forzamos construcción para aplicar cambios en el código y variables de entorno
+docker-compose -f docker-compose.prod.yml up -d --build --remove-orphans
 
 echo "---------------------------------------------------"
-echo "✅ DESPLIEGUE SEGURO COMPLETADO"
-echo "🌐 URL Banca Web: https://bantec-bank.duckdns.org"
-echo "🏧 URL Cajero:    https://bantec-bank.duckdns.org:8443"
+echo "✅ DESPLIEGUE SEGURO COMPLETADO CON ÉXITO"
+echo "🌐 URL Banca Web: https://$DOMAIN"
+echo "🏧 URL Cajero:    https://$DOMAIN:8443"
 echo "---------------------------------------------------"

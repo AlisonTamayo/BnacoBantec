@@ -29,32 +29,19 @@ jobs:
             echo "📌 Iniciando despliegue BANTEC: $(date)"
 
             # === 1. VARIABLES Y DIRECTORIOS ===
-            DOMAIN="${{ secrets.DUCKDNS_DOMAIN || 'bantec-bank' }}.duckdns.org"
-            EMAIL="arcbank2@gmail.com"
-            PROJECT_DIR="~/BnacoBantec"
-            CERT_BASE_DIR="$PROJECT_DIR/nginx/certs"
-            CERT_LIVE_DIR="$CERT_BASE_DIR/live/$DOMAIN"
+            PROJECT_DIR="$HOME/BnacoBantec"
 
             # === 2. ACTUALIZAR REPOSITORIO ===
-            if [ ! -d $PROJECT_DIR ]; then
-              git clone https://github.com/AlisonTamayo/BnacoBantec.git $PROJECT_DIR
+            if [ ! -d "$PROJECT_DIR" ]; then
+              git clone https://github.com/AlisonTamayo/BnacoBantec.git "$PROJECT_DIR"
             fi
-            cd $PROJECT_DIR
+            cd "$PROJECT_DIR"
             git fetch origin main
             git reset --hard origin/main
             git config --global --add safe.directory "*"
             chmod +x *.sh
 
-            # === 3. CONFIGURACIÓN DINÁMICA ===
-            # Ajustar nginx.conf al dominio actual
-            ./fix_nginx_conf.sh nginx/nginx.conf "$DOMAIN"
-
-            # Actualizar IP en DuckDNS
-            if [ -n "${{ secrets.DUCKDNS_TOKEN }}" ]; then
-              ./update_duckdns.sh "${{ secrets.DUCKDNS_DOMAIN }}" "${{ secrets.DUCKDNS_TOKEN }}"
-            fi
-
-            # === 4. SWAP Y MEMORIA ===
+            # === 3. SWAP (Opcional, si no existe) ===
             if [ ! -f /swapfile ]; then
               echo "📝 Creando swap de 2GB..."
               sudo fallocate -l 2G /swapfile
@@ -63,75 +50,15 @@ jobs:
               sudo swapon /swapfile
             fi
 
-            # === 5. CERTIFICADOS mTLS (Internos) ===
-            echo "🔐 Verificando certificados mTLS..."
-            CERT_SOURCE="$PROJECT_DIR/ms-transaccion/src/main/resources/certs"
-            TARGET_MTLS="~/bantec_certs"
-            if [ ! -f $CERT_SOURCE/bantec-keystore.p12 ]; then
-              ~/BnacoBantec/generate-mtls-certs.sh
-            fi
-            mkdir -p $TARGET_MTLS
-            cp -r $CERT_SOURCE/* $TARGET_MTLS/
-            chmod 777 $TARGET_MTLS/*
-
-            # === 6. CERTIFICADOS SSL (HTTPS PUBLICO) ===
-            echo "🌐 Verificando SSL para $DOMAIN..."
-            mkdir -p $CERT_BASE_DIR
-            mkdir -p "$PROJECT_DIR/nginx/certbot"
-
-            # Detectar si necesitamos el certificado real
-            NEEDS_CERT=false
-            if [ ! -f "$CERT_LIVE_DIR/fullchain.pem" ]; then
-              NEEDS_CERT=true
-            else
-              # Si es autofirmado, necesitamos reemplazarlo por Let's Encrypt
-              if ! sudo openssl x509 -in "$CERT_LIVE_DIR/fullchain.pem" -noout -issuer | grep -q "Let's Encrypt"; then
-                echo "⚠️ Certificado actual es DUMMY (autofirmado)."
-                NEEDS_CERT=true
-              fi
-            fi
-
-            if [ "$NEEDS_CERT" = true ]; then
-              echo "🛡️ Intentando obtener certificado real de Let's Encrypt..."
-              
-              # Crear Dummy Cert si no hay nada (para que Nginx arranque)
-              if [ ! -f "$CERT_LIVE_DIR/fullchain.pem" ]; then
-                mkdir -p "$CERT_LIVE_DIR"
-                sudo openssl req -x509 -nodes -days 7 -newkey rsa:2048 \
-                  -keyout "$CERT_LIVE_DIR/privkey.pem" \
-                  -out "$CERT_LIVE_DIR/fullchain.pem" \
-                  -subj "/C=EC/ST=Pichincha/L=Quito/O=Bantec/CN=$DOMAIN"
-              fi
-
-              # Levantar Nginx para responder al challenge HTTP-01
-              sudo docker-compose -f docker-compose.prod.yml up -d nginx-proxy
-              sleep 5
-
-              # Solicitar certificado (Método Webroot evita detener servicios)
-              sudo docker run --rm --name certbot-issuance \
-                -v "$CERT_BASE_DIR:/etc/letsencrypt" \
-                -v "$PROJECT_DIR/nginx/certbot:/var/www/certbot" \
-                certbot/certbot certonly --webroot -w /var/www/certbot \
-                -d "$DOMAIN" \
-                --email "$EMAIL" \
-                --agree-tos --non-interactive --no-eff-email || \
-                echo "❌ Certbot falló. ¡IMPORTANTE! Verifica que el PUERTO 80 esté ABIERTO en el Firewall de GCP."
-
-              # Si se obtuvo el real, el issuer cambiará en el siguiente despliegue
-            fi
-
-            # === 7. DESPLIEGUE DOCKER ===
-            echo "🚀 Actualizando contenedores..."
-            sudo docker-compose -f docker-compose.prod.yml build --no-cache
+            # === 4. DESPLIEGUE SEGURO AUTOMATIZADO ===
+            # Pasamos el dominio y el token de los secrets de GitHub
+            DOMAIN="${{ secrets.DUCKDNS_DOMAIN }}.duckdns.org"
+            TOKEN="${{ secrets.DUCKDNS_TOKEN }}"
             
-            # Ejecutar el script maestro de seguridad y despliegue
-            sudo ./deploy-secure.sh
+            sudo ./deploy-secure.sh "$DOMAIN" "$TOKEN"
 
-            # Limpiar imágenes antiguas para ahorrar espacio
+            # === 5. LIMPIEZA ===
             sudo docker image prune -f
-
-            # --- Ensure nginx is restarted with new config ---
-            sudo docker restart nginx-proxy-bantec || true
 
             echo "📊 Estado Final:"
             sudo docker ps
