@@ -47,12 +47,12 @@ if [ ! -f "$CERT_FILE" ]; then
     # Asegurar que el directorio de certs tenga permisos de escritura para la generación
     mkdir -p ./nginx/certs ./nginx/certbot
     chmod -R 777 ./nginx/certs ./nginx/certbot
-    ./init-letsencrypt.sh --auto
+    ./init-letsencrypt.sh --auto "$DOMAIN"
 else
     # Verificamos si el certificado es real o Dummy (autofirmado)
     if openssl x509 -in "$CERT_FILE" -noout -issuer | grep -q "localhost"; then
         echo "⚠️  Certificado DUMMY detectado. Intentando obtener Let's Encrypt Real..."
-        ./init-letsencrypt.sh --auto
+        ./init-letsencrypt.sh --auto "$DOMAIN"
     else
         echo "✅ [3/4] Certificado SSL Real ya instalado."
     fi

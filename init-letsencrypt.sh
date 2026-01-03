@@ -5,25 +5,26 @@ if ! [ -x "$(command -v docker-compose)" ]; then
   exit 1
 fi
 
-domains=(bantec-bank.duckdns.org)
+# Configuración
+domains=("${2:-bantec-bank.duckdns.org}")
 rsa_key_size=4096
 data_path="./nginx/certs"
-email="arcbank2@gmail.com" # From the guide
-staging=0 # Set to 1 if you're testing to avoid hitting request limits
+email="arcbank2@gmail.com"
+staging=0
 
 AUTO_MODE=0
 if [[ "$1" == "--auto" ]]; then
   AUTO_MODE=1
 fi
 
-if [ -d "$data_path/live/$domains" ]; then
-  if [ $AUTO_MODE -eq 1 ]; then
-    echo "### SSL data already exists for $domains. Skipping request."
-    exit 0
-  fi
-  read -p "Existing data found for $domains. Continue and replace existing certificate? (y/N) " decision
-  if [ "$decision" != "Y" ] && [ "$decision" != "y" ]; then
-    exit
+if [ -d "$data_path/live/${domains[0]}" ]; then
+  # En modo auto, permitimos continuar para que deploy-secure.sh 
+  # pueda reemplazar el Dummy Cert con uno real.
+  if [ $AUTO_MODE -ne 1 ]; then
+    read -p "Existing data found for ${domains[0]}. Continue and replace existing certificate? (y/N) " decision
+    if [ "$decision" != "Y" ] && [ "$decision" != "y" ]; then
+      exit
+    fi
   fi
 fi
 
@@ -36,12 +37,12 @@ if [ ! -e "$data_path/options-ssl-nginx.conf" ] || [ ! -e "$data_path/ssl-dhpara
   echo
 fi
 
-echo "### Creating dummy certificate for $domains ..."
+echo "### Creating dummy certificate for ${domains[0]} ..."
 # Usamos el openssl del host para evitar problemas de configuración dentro del contenedor
-mkdir -p "$data_path/live/$domains"
+mkdir -p "$data_path/live/${domains[0]}"
 openssl req -x509 -nodes -newkey rsa:2048 -days 1 \
-  -keyout "$data_path/live/$domains/privkey.pem" \
-  -out "$data_path/live/$domains/fullchain.pem" \
+  -keyout "$data_path/live/${domains[0]}/privkey.pem" \
+  -out "$data_path/live/${domains[0]}/fullchain.pem" \
   -subj "/CN=localhost"
 echo
 
@@ -50,15 +51,15 @@ echo "### Starting nginx ..."
 docker-compose -f docker-compose.prod.yml up --force-recreate -d nginx-proxy
 echo
 
-echo "### Deleting dummy certificate for $domains ..."
+echo "### Deleting dummy certificate for ${domains[0]} ..."
 docker-compose -f docker-compose.prod.yml run --rm --entrypoint "\
-  rm -rf /etc/letsencrypt/live/$domains && \
-  rm -rf /etc/letsencrypt/archive/$domains && \
-  rm -rf /etc/letsencrypt/renewal/$domains.conf" certbot
+  rm -rf /etc/letsencrypt/live/${domains[0]} && \
+  rm -rf /etc/letsencrypt/archive/${domains[0]} && \
+  rm -rf /etc/letsencrypt/renewal/${domains[0]}.conf" certbot
 echo
 
 
-echo "### Requesting Let's Encrypt certificate for $domains ..."
+echo "### Requesting Let's Encrypt certificate for ${domains[0]} ..."
 #Join $domains to -d args
 domain_args=""
 for domain in "${domains[@]}"; do

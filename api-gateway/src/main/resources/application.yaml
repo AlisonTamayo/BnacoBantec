@@ -20,6 +20,9 @@ spring:
               - "https://35.209.79.193"
               - "https://35.209.79.193:3000"
               - "https://35.209.79.193:3001"
+              # HTTPS DuckDNS domain
+              - "https://bantec-bank.duckdns.org"
+              - "https://bantec-bank.duckdns.org:8443"
               # HTTPS sslip.io domains
               - "https://bantec.35-209-79-193.sslip.io"
               - "https://bantec.35-209-79-193.sslip.io:8443"
