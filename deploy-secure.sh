@@ -51,6 +51,17 @@ echo "🏗️ [4/4] Desplegando servicios con Docker Compose..."
 # Forzamos construcción para aplicar cambios en el código y variables de entorno
 docker-compose -f docker-compose.prod.yml up -d --build --remove-orphans
 
+# 7. Verificación de Salud de Nginx
+echo "🔍 Verificando estado de Nginx..."
+sleep 5
+NGINX_STATUS=$(docker inspect -f '{{.State.Running}}' nginx-proxy-bantec 2>/dev/null)
+if [ "$NGINX_STATUS" == "true" ]; then
+    echo "✅ Nginx está corriendo correctamente."
+else
+    echo "❌ ERROR: Nginx no pudo arrancar. Revisando logs..."
+    docker logs nginx-proxy-bantec | tail -n 20
+fi
+
 echo "---------------------------------------------------"
 echo "✅ DESPLIEGUE SEGURO COMPLETADO CON ÉXITO"
 echo "🌐 URL Banca Web: https://$DOMAIN"
