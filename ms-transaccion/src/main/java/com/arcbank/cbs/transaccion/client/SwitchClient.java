@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import com.arcbank.cbs.transaccion.dto.SwitchTransferRequest;
 import com.arcbank.cbs.transaccion.dto.SwitchTransferResponse;
 
-@FeignClient(name = "digiconecu-switch", url = "${app.switch.network-url:https://switch-interbank.ddns.net}", configuration = com.arcbank.cbs.transaccion.config.MTLSConfig.class)
+@FeignClient(name = "digiconecu-switch", url = "${app.switch.network-url:http://3.140.230.212:8000}", configuration = com.arcbank.cbs.transaccion.config.MTLSConfig.class)
 public interface SwitchClient {
 
     @PostMapping("/api/v1/transacciones")
