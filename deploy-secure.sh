@@ -23,6 +23,14 @@ if [ -f "./fix_nginx_conf.sh" ]; then
     ./fix_nginx_conf.sh nginx/nginx.conf "$DOMAIN"
 fi
 
+# 3.1 Descargar parámetros de seguridad SSL (necesarios para Nginx)
+echo "🛡️ Descargando parámetros de seguridad TLS..."
+mkdir -p ./nginx/certs
+if [ ! -e "./nginx/certs/options-ssl-nginx.conf" ] || [ ! -e "./nginx/certs/ssl-dhparams.pem" ]; then
+    curl -s https://raw.githubusercontent.com/certbot/certbot/master/certbot-nginx/certbot_nginx/_internal/tls_configs/options-ssl-nginx.conf > "./nginx/certs/options-ssl-nginx.conf"
+    curl -s https://raw.githubusercontent.com/certbot/certbot/master/certbot/certbot/ssl-dhparams.pem > "./nginx/certs/ssl-dhparams.pem"
+fi
+
 # 4. Verificar/Generar certificados mTLS para ms-transaccion
 # Buscamos en la ruta que usa docker-compose (./ms-transaccion/certs/)
 if [ ! -f "./ms-transaccion/certs/bantec-keystore.p12" ]; then
@@ -33,18 +41,26 @@ else
 fi
 
 # 5. Verificar/Generar certificados SSL con Let's Encrypt
-if [ ! -d "./nginx/certs/live/$DOMAIN" ]; then
-    echo "🛡️ [3/4] Iniciando proceso de SSL Let's Encrypt para $DOMAIN..."
+CERT_FILE="./nginx/certs/live/$DOMAIN/fullchain.pem"
+if [ ! -f "$CERT_FILE" ]; then
+    echo "🛡️ [3/4] Certificados no detectados. Iniciando proceso de SSL Let's Encrypt..."
+    # Asegurar que el directorio de certs tenga permisos de escritura para la generación
+    mkdir -p ./nginx/certs ./nginx/certbot
+    chmod -R 777 ./nginx/certs ./nginx/certbot
     ./init-letsencrypt.sh --auto
 else
     # Verificamos si el certificado es real o Dummy (autofirmado)
-    if openssl x509 -in "./nginx/certs/live/$DOMAIN/fullchain.pem" -noout -issuer | grep -q "localhost"; then
-        echo "⚠️  Certificado DUMMY detectado. Reemplazando por Let's Encrypt..."
+    if openssl x509 -in "$CERT_FILE" -noout -issuer | grep -q "localhost"; then
+        echo "⚠️  Certificado DUMMY detectado. Intentando obtener Let's Encrypt Real..."
         ./init-letsencrypt.sh --auto
     else
         echo "✅ [3/4] Certificado SSL Real ya instalado."
     fi
 fi
+
+# Asegurar permisos finales para que Nginx pueda leerlos
+sudo chmod -R 755 ./nginx/certs
+sudo chmod -R 755 ./nginx/certbot
 
 # 6. Levantar o Reiniciar servicios con construcción total
 echo "🏗️ [4/4] Desplegando servicios con Docker Compose..."
