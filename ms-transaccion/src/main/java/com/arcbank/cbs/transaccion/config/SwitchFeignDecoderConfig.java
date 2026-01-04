@@ -10,12 +10,15 @@ import feign.Util;
 import feign.codec.Decoder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
 
-@Configuration
+/**
+ * Decoder personalizado SOLO para SwitchClient.
+ * Esta clase NO tiene @Configuration para evitar que se aplique globalmente.
+ * Solo se aplica a los FeignClients que la referencian explícitamente.
+ */
 @Slf4j
 public class SwitchFeignDecoderConfig {
 
@@ -28,9 +31,18 @@ public class SwitchFeignDecoderConfig {
         return new Decoder() {
             @Override
             public Object decode(Response response, Type type) throws IOException {
+                // Solo aplicar lógica especial para SwitchTransferResponse
+                if (!type.getTypeName().contains("SwitchTransferResponse")) {
+                    // Para otros tipos, usar el decoder por defecto de Jackson
+                    if (response.body() == null) {
+                        return null;
+                    }
+                    String body = Util.toString(response.body().asReader(java.nio.charset.StandardCharsets.UTF_8));
+                    return mapper.readValue(body, mapper.constructType(type));
+                }
+
                 if (response.body() == null) {
                     log.info("📥 Switch response body is null, status: {}", response.status());
-                    // Si HTTP 2xx y sin body, es exitoso
                     if (response.status() >= 200 && response.status() < 300) {
                         return SwitchTransferResponse.builder()
                                 .success(true)
@@ -48,7 +60,6 @@ public class SwitchFeignDecoderConfig {
                 String body = Util.toString(response.body().asReader(java.nio.charset.StandardCharsets.UTF_8));
                 log.info("📥 Switch raw response - Status: {}, Body: {}", response.status(), body);
 
-                // Si el body está vacío
                 if (body == null || body.isBlank()) {
                     if (response.status() >= 200 && response.status() < 300) {
                         log.info("✅ Switch returned 2xx with empty body - treating as success");
@@ -59,49 +70,30 @@ public class SwitchFeignDecoderConfig {
                 }
 
                 try {
-                    // Intentar parsear la respuesta
                     JsonNode rootNode = mapper.readTree(body);
-                    
                     SwitchTransferResponse switchResp = mapper.treeToValue(rootNode, SwitchTransferResponse.class);
                     
                     // Si HTTP status es 2xx, marcar como exitoso
                     if (response.status() >= 200 && response.status() < 300) {
-                        // Si no hay error explícito O si hay datos, es exitoso
                         if (switchResp.getError() == null || switchResp.getData() != null) {
-                            log.info("✅ Switch returned 2xx - marking as success. Data: {}", switchResp.getData());
+                            log.info("✅ Switch returned 2xx - marking as success");
                             switchResp.setSuccess(true);
                         }
                         
-                        // Verificar también si hay un campo "estado" o "status" que indique éxito
+                        // Verificar campos alternativos
                         if (rootNode.has("estado")) {
                             String estado = rootNode.get("estado").asText();
-                            if (estado.equalsIgnoreCase("COMPLETADA") || 
-                                estado.equalsIgnoreCase("EXITOSA") ||
-                                estado.equalsIgnoreCase("PROCESADA") ||
-                                estado.equalsIgnoreCase("SUCCESS") ||
-                                estado.equalsIgnoreCase("OK") ||
-                                estado.equalsIgnoreCase("ACCEPTED")) {
-                                log.info("✅ Switch returned estado='{}' - marking as success", estado);
+                            if (estado.matches("(?i)(COMPLETADA|EXITOSA|PROCESADA|SUCCESS|OK|ACCEPTED)")) {
                                 switchResp.setSuccess(true);
                             }
                         }
-                        
-                        // También verificar si hay un campo "status"
                         if (rootNode.has("status")) {
                             String status = rootNode.get("status").asText();
-                            if (status.equalsIgnoreCase("COMPLETED") || 
-                                status.equalsIgnoreCase("SUCCESS") ||
-                                status.equalsIgnoreCase("PROCESSED") ||
-                                status.equalsIgnoreCase("ACCEPTED") ||
-                                status.equalsIgnoreCase("OK")) {
-                                log.info("✅ Switch returned status='{}' - marking as success", status);
+                            if (status.matches("(?i)(COMPLETED|SUCCESS|PROCESSED|ACCEPTED|OK)")) {
                                 switchResp.setSuccess(true);
                             }
                         }
-                        
-                        // Si la respuesta tiene instructionId o transactionId, probablemente sea exitosa
                         if (rootNode.has("instructionId") || rootNode.has("transactionId") || rootNode.has("id")) {
-                            log.info("✅ Switch returned with transaction ID - marking as success");
                             switchResp.setSuccess(true);
                         }
                     }
@@ -109,11 +101,10 @@ public class SwitchFeignDecoderConfig {
                     return switchResp;
                     
                 } catch (Exception e) {
-                    log.error("Error parsing Switch response: {} - Body was: {}", e.getMessage(), body);
+                    log.error("Error parsing Switch response: {} - Body: {}", e.getMessage(), body);
                     
-                    // Si es HTTP 2xx pero no pudimos parsear, aún así es éxito
                     if (response.status() >= 200 && response.status() < 300) {
-                        log.info("✅ Switch returned 2xx but couldn't parse - treating as success anyway");
+                        log.info("✅ Switch returned 2xx but couldn't parse - treating as success");
                         return SwitchTransferResponse.builder()
                                 .success(true)
                                 .build();
@@ -123,7 +114,7 @@ public class SwitchFeignDecoderConfig {
                             .success(false)
                             .error(SwitchTransferResponse.ErrorBody.builder()
                                     .code("PARSE_ERROR")
-                                    .message("Failed to parse Switch response: " + e.getMessage())
+                                    .message("Failed to parse: " + e.getMessage())
                                     .build())
                             .build();
                 }
