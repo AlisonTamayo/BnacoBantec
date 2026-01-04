@@ -103,9 +103,10 @@ jobs:
             sudo docker image prune -f
 
             # Construir y levantar con docker-compose (producción)
-            echo "🚀 Reiniciando servicios y limpiando basura..."
+            echo "🚀 Reiniciando servicios..."
             sudo docker-compose -f docker-compose.prod.yml down --remove-orphans
-            sudo docker-compose -f docker-compose.prod.yml up -d --build --force-recreate
+            sudo docker-compose -f docker-compose.prod.yml build --no-cache
+            sudo docker-compose -f docker-compose.prod.yml up -d --force-recreate
 
             # Reiniciar Nginx Proxy para aplicar certificados y configs
             echo "🔄 Reiniciando Proxy Nginx..."
